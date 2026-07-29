@@ -27,8 +27,8 @@ func NewProductRepository(client *mongo.Client, db *mongo.Database) repositories
 	return &ProductRepository{client: client, db: db}
 }
 
-func (r *ProductRepository) collection() *mongo.Collection {
-	return r.db.Collection(ProductsCollection)
+func (repo *ProductRepository) collection() *mongo.Collection {
+	return repo.db.Collection(ProductsCollection)
 }
 
 // Create persists the product and its recorded domain events in one
