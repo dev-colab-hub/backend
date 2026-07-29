@@ -1,5 +1,7 @@
 # 9. Testing a DDD codebase
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 I don't trust my code — I test it. But *what* to test at *which* level is where teams burn time, and it's also where this architecture quietly pays out its biggest dividend: **the layering decides the testing strategy for you.**
 
 The rule of thumb the template follows:

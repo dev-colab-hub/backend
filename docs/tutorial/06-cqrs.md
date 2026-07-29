@@ -1,5 +1,7 @@
 # 6. CQRS, commands and queries
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 CQRS — Command Query Responsibility Segregation — has a fearsome reputation it doesn't deserve. The intimidating version involves separate databases, event sourcing, and eventual consistency between your own read and write models. This template implements the version I actually recommend to most teams: **separate code paths for writes and reads, one database.**
 
 The idea in one sentence: a request either *changes* the system or *asks* it something, and pretending those are the same operation makes both worse.

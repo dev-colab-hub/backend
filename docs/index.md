@@ -1,5 +1,7 @@
 # Why Domain-Driven Design makes your life easier
 
+> **Note:** This tutorial was written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — the code snippets, file paths, and permalinks throughout no longer match the current codebase, but the DDD/CQRS concepts they teach still apply.
+
 I've been writing Go backends for over a decade, and the same three problems show up in almost every codebase I've inherited:
 
 1. **Business logic lives in HTTP handlers.** The rule "a product needs a price above zero" is enforced in a controller, so the importer, the admin CLI, and the message consumer each get their own slightly different copy of it.

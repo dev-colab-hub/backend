@@ -1,37 +1,42 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: marketplace
-      POSTGRES_PASSWORD: marketplace
-      POSTGRES_DB: marketplace
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "5432:5432"
+      - "27017:27017"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U marketplace -d marketplace"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # One-shot job: applies migrations, then exits.
-  migrate:
-    build: .
-    entrypoint: ["/app/migrate", "-command", "up"]
-    environment:
-      DATABASE_URL: postgres://marketplace:marketplace@postgres:5432/marketplace?sslmode=disable
+  # One-shot job: initializes the single-node replica set, then exits.
+  # Transactions (used for the transactional outbox) require a replica set
+  # even with a single member; this only needs to run once per data volume,
+  # but is idempotent (rs.status() succeeds and no-ops on subsequent runs).
+  mongo-init:
+    image: mongo:7
+    entrypoint:
+      - mongosh
+      - --host
+      - mongo:27017
+      - --quiet
+      - --eval
+      - "try { rs.status() } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo:27017'}]}) }"
     depends_on:
-      postgres:
+      mongo:
         condition: service_healthy
 
   app:
     build: .
     environment:
-      DATABASE_URL: postgres://marketplace:marketplace@postgres:5432/marketplace?sslmode=disable
+      MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0
+      MONGO_DATABASE: dev_colab_hub
       PORT: "8080"
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
+      mongo:
         condition: service_healthy
-      migrate:
+      mongo-init:
         condition: service_completed_successfully

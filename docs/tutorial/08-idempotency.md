@@ -1,5 +1,7 @@
 # 8. Idempotent commands
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 Your client sends `POST /products`. The server creates the product, then the load balancer kills the connection before the response gets out. The client sees a timeout. What does every reasonable HTTP client do on a timeout? It retries. Now you have two products.
 
 This is not an exotic failure mode — it's Tuesday. Mobile clients on flaky networks, rolling deploys, proxy timeouts: anything separating "the server did the work" from "the client learned about it" will eventually duplicate your writes. The standard fix is an **idempotency key**: the client generates a unique key per logical operation, sends it with the request, and the server guarantees the same key never executes the operation twice.

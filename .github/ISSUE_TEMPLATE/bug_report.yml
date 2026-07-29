@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in the template is broken or incorrect
+description: Something in the backend is broken or incorrect
 labels: [bug]
 body:
   - type: textarea

@@ -3,19 +3,19 @@ package rest
 import (
 	"net/http"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type HealthController struct {
-	pool *pgxpool.Pool
+	client *mongo.Client
 }
 
 // NewHealthController exposes liveness and readiness probes. Liveness only
 // proves the process responds; readiness also checks the database, so
-// orchestrators stop routing traffic when Postgres is gone.
-func NewHealthController(e *echo.Echo, pool *pgxpool.Pool) *HealthController {
-	controller := &HealthController{pool: pool}
+// orchestrators stop routing traffic when Mongo is gone.
+func NewHealthController(e *echo.Echo, client *mongo.Client) *HealthController {
+	controller := &HealthController{client: client}
 
 	e.GET("/healthz", controller.Liveness)
 	e.GET("/readyz", controller.Readiness)
@@ -28,7 +28,7 @@ func (hc *HealthController) Liveness(c echo.Context) error {
 }
 
 func (hc *HealthController) Readiness(c echo.Context) error {
-	if err := hc.pool.Ping(c.Request().Context()); err != nil {
+	if err := hc.client.Ping(c.Request().Context(), nil); err != nil {
 		return c.JSON(http.StatusServiceUnavailable, map[string]string{
 			"status": "unavailable",
 			"reason": "database unreachable",

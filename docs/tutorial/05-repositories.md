@@ -1,5 +1,7 @@
 # 5. Repositories
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 A **repository** gives the domain the illusion of an in-memory collection of aggregates: get one by Id, get them all, add, update, remove. Behind the illusion sits a database — but the domain never sees it, because of one structural decision that this chapter is really about:
 
 **The interface lives in the domain. The implementation lives in infrastructure.**

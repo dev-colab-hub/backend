@@ -1,5 +1,7 @@
 # 7. Domain events and the outbox
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 Here's a piece of code I've written, in some form, at three different companies:
 
 ```go

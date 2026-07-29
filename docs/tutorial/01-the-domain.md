@@ -1,5 +1,7 @@
 # 1. The domain and its language
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 Before a single line of Go, DDD asks one thing of you: agree on what the words mean.
 
 That sounds trivial. It never is. I've sat in meetings where "order" meant three different things to three different teams — the cart before checkout, the paid transaction, and the fulfillment job — and the codebase faithfully reflected the confusion with `Order`, `OrderV2`, and `PurchaseOrder` structs that half-overlapped.

@@ -1,10 +1,10 @@
-site_name: go-ddd
-site_description: Learn Domain-Driven Design in Go with a production-ready template. Entities, value objects, aggregates, CQRS, domain events, and the transactional outbox, explained from zero.
-site_url: https://sklinkert.github.io/go-ddd/
-site_author: Simon Klinkert
+site_name: dev-colab-hub backend
+site_description: Architecture reference for the dev-colab-hub backend. Domain-Driven Design in Go — entities, value objects, aggregates, CQRS, domain events, and the transactional outbox, explained from zero.
+site_url: https://dev-colab-hub.github.io/backend/
+site_author: dev-colab-hub
 
-repo_url: https://github.com/sklinkert/go-ddd
-repo_name: sklinkert/go-ddd
+repo_url: https://github.com/dev-colab-hub/backend
+repo_name: dev-colab-hub/backend
 edit_uri: edit/main/docs/
 
 theme:

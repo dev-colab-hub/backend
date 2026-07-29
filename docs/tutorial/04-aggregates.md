@@ -1,5 +1,7 @@
 # 4. Aggregates and their boundaries
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 This is the chapter where DDD stops being "nice structs" and starts being architecture. **Aggregates** are the answer to two questions every growing codebase eventually faces:
 
 1. When I change this object, what else must change *in the same transaction*?

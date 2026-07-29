@@ -3,9 +3,10 @@ package config
 import "os"
 
 type Config struct {
-	// DatabaseURL may be a libpq keyword DSN or a postgres:// URL; pgx
-	// accepts both.
-	DatabaseURL string
+	// MongoURI is the MongoDB connection string, e.g. mongodb://host:27017.
+	MongoURI string
+	// MongoDatabase is the database name used on the connected client.
+	MongoDatabase string
 	// Port is the HTTP listen port without colon.
 	Port string
 }
@@ -14,8 +15,9 @@ type Config struct {
 // to the code that enforces them — not in the database or deployment files.
 func Load() Config {
 	return Config{
-		DatabaseURL: getEnv("DATABASE_URL", "host=localhost user=marketplace password=marketplace dbname=marketplace port=5432 sslmode=disable"),
-		Port:        getEnv("PORT", "8080"),
+		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		MongoDatabase: getEnv("MONGO_DATABASE", "dev_colab_hub"),
+		Port:          getEnv("PORT", "8080"),
 	}
 }
 

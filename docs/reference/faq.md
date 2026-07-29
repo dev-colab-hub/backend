@@ -1,5 +1,7 @@
 # FAQ
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase; the underlying reasoning still applies.
+
 The questions I get most, answered the way I'd answer them over coffee.
 
 ## Isn't DDD overkill for my project?

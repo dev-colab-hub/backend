@@ -1,5 +1,7 @@
 # Domain-Driven Design (DDD) and CQRS Principles Guide
 
+> **Note:** The links below point to the original `go-ddd` template's tutorial site, anchored to *its* Postgres/pgx/sqlc code — not dev-colab-hub's actual code, which now runs on MongoDB (see `internal/infrastructure/db/mongodb/` and the locally-kept, annotated copy of this tutorial under `docs/`). The DDD/CQRS concepts they teach still apply.
+
 > **This guide has grown into a full tutorial site: [sklinkert.github.io/go-ddd](https://sklinkert.github.io/go-ddd/)**
 >
 > Everything that used to live in this file is now covered there in more depth, with every pattern anchored to the actual code in this repository.

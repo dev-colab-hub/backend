@@ -5,7 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	db "github.com/sklinkert/go-ddd/internal/infrastructure/db/sqlc"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Publisher forwards an event payload to the outside world (message broker,
@@ -25,21 +27,33 @@ func (SlogPublisher) Publish(ctx context.Context, eventName string, payload []by
 	return nil
 }
 
-// Relay polls the outbox table and publishes unpublished events. Run exactly
-// one instance (or guard with FOR UPDATE SKIP LOCKED when scaling out).
-type Relay struct {
-	queries   *db.Queries
-	publisher Publisher
-	interval  time.Duration
-	batchSize int32
+// relayEventDoc is the projection of an outbox document the relay actually
+// needs (no aggregate_id: the relay only forwards name + payload).
+type relayEventDoc struct {
+	ID          string     `bson:"_id"`
+	EventName   string     `bson:"event_name"`
+	Payload     []byte     `bson:"payload"`
+	PublishedAt *time.Time `bson:"published_at"`
 }
 
-func NewRelay(queries *db.Queries, publisher Publisher, interval time.Duration) *Relay {
+// Relay polls the outbox collection and publishes unpublished events. Run
+// exactly one instance: there is no findOneAndUpdate-based claim/lock here
+// (Mongo's closest equivalent to Postgres's FOR UPDATE SKIP LOCKED), so
+// running multiple instances concurrently could publish the same batch
+// twice — the same unenforced single-instance assumption as before.
+type Relay struct {
+	collection *mongo.Collection
+	publisher  Publisher
+	interval   time.Duration
+	batchSize  int64
+}
+
+func NewRelay(collection *mongo.Collection, publisher Publisher, interval time.Duration) *Relay {
 	return &Relay{
-		queries:   queries,
-		publisher: publisher,
-		interval:  interval,
-		batchSize: 100,
+		collection: collection,
+		publisher:  publisher,
+		interval:   interval,
+		batchSize:  100,
 	}
 }
 
@@ -61,8 +75,18 @@ func (r *Relay) Start(ctx context.Context) {
 }
 
 func (r *Relay) relayBatch(ctx context.Context) error {
-	events, err := r.queries.GetUnpublishedOutboxEvents(ctx, r.batchSize)
+	cursor, err := r.collection.Find(ctx,
+		bson.D{{Key: "published_at", Value: nil}},
+		options.Find().
+			SetSort(bson.D{{Key: "occurred_at", Value: 1}}).
+			SetLimit(r.batchSize),
+	)
 	if err != nil {
+		return err
+	}
+
+	var events []relayEventDoc
+	if err := cursor.All(ctx, &events); err != nil {
 		return err
 	}
 
@@ -72,7 +96,11 @@ func (r *Relay) relayBatch(ctx context.Context) error {
 			return err
 		}
 
-		if err := r.queries.MarkOutboxEventPublished(ctx, event.ID); err != nil {
+		now := time.Now()
+		if _, err := r.collection.UpdateOne(ctx,
+			bson.D{{Key: "_id", Value: event.ID}},
+			bson.D{{Key: "$set", Value: bson.D{{Key: "published_at", Value: now}}}},
+		); err != nil {
 			return err
 		}
 	}

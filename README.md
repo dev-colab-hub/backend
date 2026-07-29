@@ -1,47 +1,38 @@
-# Go-DDD: Build Domain-Driven Go Services Fast
+# dev-colab-hub backend
 
-[![CI](https://github.com/sklinkert/go-ddd/actions/workflows/go.yml/badge.svg)](https://github.com/sklinkert/go-ddd/actions/workflows/go.yml)
-[![codecov](https://codecov.io/gh/sklinkert/go-ddd/branch/main/graph/badge.svg)](https://codecov.io/gh/sklinkert/go-ddd)
-[![Go Reference](https://pkg.go.dev/badge/github.com/sklinkert/go-ddd.svg)](https://pkg.go.dev/github.com/sklinkert/go-ddd)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/sklinkert/go-ddd)](go.mod)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+The backend service for **dev-colab-hub**. It's currently scaffolded on [`go-ddd`](https://github.com/sklinkert/go-ddd), an opinionated Go DDD/CQRS template — the layered architecture (domain/application/infrastructure/interface), idempotent command handling, and transactional outbox are the real, current foundation. The `Seller`/`Product` example domain is the template's inherited placeholder, pending replacement with dev-colab-hub's actual domain (see the [`document`](../document) repo for the product spec).
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+>  **New to the DDD/CQRS patterns used here? [Start with the architecture tutorial →](https://dev-colab-hub.github.io/backend/)**
+> A nine-chapter walkthrough of Domain-Driven Design, using this codebase as the running example.
 
-`go-ddd` jump-starts production-grade Go backends that keep business rules, infrastructure, and delivery code cleanly separated. Out of the box you get opinionated DDD building blocks, CQRS command and query flows, idempotent write paths, domain events with a transactional outbox, and tooling to keep schema and code in lockstep.
-
-> 📚 **New to DDD? [Start with the tutorial →](https://sklinkert.github.io/go-ddd/)**
-> A nine-chapter walkthrough that teaches Domain-Driven Design from zero, using this codebase as the running example.
-
-## Why This Template
+## Architecture Highlights
 
 - **Model-first defaults** – Onion architecture keeps the domain pure while application services orchestrate infrastructure concerns.
 - **Battle-tested patterns** – Commands, queries, repositories, value objects, domain events, and soft deletes mirror patterns used in real-world enterprise applications.
 - **Idempotent pipelines** – Race-safe idempotency keys (atomic reservation, no check-then-write) make every command retry-safe.
 - **Domain events + outbox** – State changes and their events are persisted together; a relay publishes them with at-least-once delivery.
-- **Migration discipline** – SQL migrations, `migrate.go`, and `sqlc` make schema evolution explicit and reproducible.
+- **Idempotent bootstrap** – `EnsureIndexes` creates the indexes the repositories rely on at startup; safe to run on every boot instead of a separate migration tool.
 
-## What You Get
+## What's In Here Today
 
-- Marketplace example that demonstrates aggregates (Seller, Product), a `Money` value object, cross-module interactions, and validation rules.
+- `Seller`/`Product` example domain inherited from the template — demonstrates aggregates, a `Money` value object, cross-module interactions, and validation rules, but is **not** dev-colab-hub's actual domain yet.
 - Layered modules under `internal/` for `domain`, `application`, `infrastructure`, `interface`, plus `testhelpers` for fixture reuse.
-- Executable entrypoint at `cmd/marketplace/main.go` ready to wire adapters or frameworks of your choice.
-- Database assets in `migrations/` and `sql/` plus generated data access via `sqlc`.
+- Executable entrypoint at `cmd/api/main.go` ready to wire adapters or frameworks of your choice.
+- MongoDB document repositories under `internal/infrastructure/db/mongodb`, with indexes ensured idempotently at startup.
 - [OpenAPI spec](api/openapi.yaml), `/healthz` + `/readyz` probes, and a one-command Docker Compose stack.
 
 ## Tech Stack Essentials
 
 - **Go 1.26** with idiomatic patterns and testify-powered tests.
 - **Echo v4** HTTP stack for REST endpoints.
-- **pgx/v5** and `sqlc` for type-safe PostgreSQL access.
-- **golang-migrate** handling SQL schema migrations
-- **Testcontainers** integration to provision disposable Postgres instances during tests.
+- **mongo-driver/v2** for MongoDB access, using multi-document transactions for the transactional outbox (requires Mongo to run as a replica set — see `docker-compose.yml`).
+- **Testcontainers** integration to provision disposable MongoDB (single-node replica set) instances during tests.
 - **google/uuid** helpers for deterministic ID generation inside the domain.
 - **golangci-lint** for static analysis, plus a `Makefile`, `Dockerfile`, and `docker-compose.yml` for a one-command local stack.
 
 ## Design Principles in Action
 
-Domain-Driven Design connects implementation to an evolving model. `go-ddd` showcases this by modelling a simple marketplace where `Sellers` manage `Products`, exercising aggregates, value objects, and validation flows.
+Domain-Driven Design connects implementation to an evolving model. The current example models a simple marketplace where `Sellers` manage `Products`, exercising aggregates, value objects, and validation flows.
 
 Anatomy of a write request:
 
@@ -51,26 +42,28 @@ sequenceDiagram
     participant R as REST Controller
     participant S as Application Service
     participant D as Domain
-    participant P as Postgres
+    participant M as MongoDB
 
     C->>R: POST /api/v1/products (idempotency_key)
     R->>S: CreateProductCommand
-    S->>P: Reserve idempotency key (atomic)
+    S->>M: Reserve idempotency key (atomic insert)
     S->>D: NewProduct(name, Money, ValidatedSeller)
     D->>D: validate() → ValidatedProduct + ProductCreated event
-    S->>P: INSERT product + outbox event
-    P-->>S: persisted row
-    S->>P: store response for idempotency key
+    S->>M: insert product doc + outbox event doc (one transaction)
+    M-->>S: persisted document
+    S->>M: store response for idempotency key
     S-->>R: CommandResult
     R-->>C: 201 Created (JSON)
-    Note over P: Outbox relay publishes<br/>ProductCreated asynchronously
+    Note over M: Outbox relay publishes<br/>ProductCreated asynchronously
 ```
 
 ## Documentation
 
-📚 **[DDD from zero: the full tutorial](https://sklinkert.github.io/go-ddd/)** — nine chapters from "why DDD" to entities, value objects, aggregates, repositories, CQRS, the outbox, idempotency, and testing, all anchored to this codebase.
+📚 **[DDD from zero: the full tutorial](https://dev-colab-hub.github.io/backend/)** — nine chapters from "why DDD" to entities, value objects, aggregates, repositories, CQRS, the outbox, idempotency, and testing, all anchored to this codebase.
 
-📖 **[Comprehensive DDD & CQRS Principles Guide](DDD_CQRS_PRINCIPLES.md)** - Learn how to apply these patterns to any business domain.
+📖 **[Comprehensive DDD & CQRS Principles Guide](DDD_CQRS_PRINCIPLES.md)** - how these patterns are applied here, and how to extend them to dev-colab-hub's actual domain.
+
+📋 **[`document`](../document) repo** — SRS, sprint plans, and user stories: the source of truth for *what* this backend should actually do.
 
 ## Repository Structure
 
@@ -136,7 +129,7 @@ This separation enables different optimization strategies:
 ### Idempotency Keys
 Idempotency ensures that multiple identical requests have the same effect as a single request. This is crucial for handling network failures and retries in distributed systems. Implementation:
 - Every mutating endpoint (create, update, **and delete**) accepts an optional key. The conventional `Idempotency-Key` HTTP header is preferred; an `idempotency_key` field in the JSON body is still honored as a fallback, and the header wins when both are sent
-- The key is **reserved atomically** (`INSERT ... ON CONFLICT DO NOTHING`), so two concurrent requests with the same key can never both execute — no check-then-write race
+- The key is **reserved atomically** (an insert against a unique index; a duplicate-key error means another request already holds it), so two concurrent requests with the same key can never both execute — no check-then-write race
 - A completed request returns its cached response; a still-running one returns an "in progress" error so the client retries later
 - Reusing a key with a **different payload** is rejected instead of silently returning the wrong cached response
 - If the command fails, the reservation is released so the client can retry; reservations orphaned by a crash expire after a TTL
@@ -145,68 +138,11 @@ This prevents duplicate entities from being created when clients retry failed re
 
 ### Domain Events and the Transactional Outbox
 
-Aggregates record events (e.g. `ProductCreated`) when something business-relevant happens. Instead of publishing them directly to a broker — which risks losing events when the process crashes between the DB commit and the publish — events are stored in an `outbox_events` table. A relay polls the outbox and publishes unpublished events with at-least-once delivery. See `internal/domain/events/` and `internal/infrastructure/outbox/`.
+Aggregates record events (e.g. `ProductCreated`) when something business-relevant happens. Instead of publishing them directly to a broker — which risks losing events when the process crashes between the DB commit and the publish — events are stored in an `outbox_events` collection, inserted in the same multi-document transaction as the aggregate write. A relay polls the outbox and publishes unpublished events with at-least-once delivery. See `internal/domain/events/` and `internal/infrastructure/outbox/`.
 
-## Database Migrations
+## Indexes
 
-This project uses [golang-migrate](https://github.com/golang-migrate/migrate) for database schema management. Migrations are stored in the `migrations/` directory with sequential version numbers.
-
-### Migration Files Structure
-```
-migrations/
-├── 000001_initial_schema.up.sql    # Creates initial tables
-├── 000001_initial_schema.down.sql  # Rollback for initial schema
-├── 000002_price_as_money.up.sql    # Money as integer cents + currency
-├── 000003_outbox.up.sql            # Transactional outbox table
-├── 000004_price_minor_units.up.sql # Rename to ISO 4217 minor units
-└── ...
-```
-
-### Running Migrations
-
-#### Using the built-in utility:
-```bash
-# Apply all pending migrations
-go run migrate.go -database-url "postgres://user:pass@localhost/db?sslmode=disable" -command up
-
-# Rollback last migration
-go run migrate.go -database-url "postgres://user:pass@localhost/db?sslmode=disable" -command down -steps 1
-
-# Check current version
-go run migrate.go -database-url "postgres://user:pass@localhost/db?sslmode=disable" -command version
-
-# Force to specific version (use with caution)
-go run migrate.go -database-url "postgres://user:pass@localhost/db?sslmode=disable" -command force -version 1
-```
-
-#### Using the CLI tool directly:
-```bash
-# Install the CLI tool
-go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-
-# Apply all pending migrations
-migrate -path migrations -database "postgres://user:pass@localhost/db?sslmode=disable" up
-
-# Rollback last migration
-migrate -path migrations -database "postgres://user:pass@localhost/db?sslmode=disable" down 1
-```
-
-### Creating New Migrations
-```bash
-# Create a new migration
-migrate create -ext sql -dir migrations -seq add_user_email_column
-```
-
-This will create two files:
-- `0000NN_add_user_email_column.up.sql` - Forward migration
-- `0000NN_add_user_email_column.down.sql` - Rollback migration
-
-### Migration Best Practices
-- Always create both `up` and `down` migrations
-- Test migrations on a copy of production data
-- Keep migrations small and focused
-- Never modify existing migration files once they've been applied in production
-- Use descriptive names for migration files
+MongoDB is schemaless, so there's no forward/backward migration tool: `mongodb.EnsureIndexes` (`internal/infrastructure/db/mongodb/indexes.go`) creates the indexes the repositories rely on — a unique index on `idempotency_records.key`, a partial index on unpublished `outbox_events`, and `deleted_at`/`seller_id` lookup indexes. `CreateIndexes` is idempotent, so this runs on every `cmd/api` startup instead of being a separate step.
 
 ## Getting Started
 
@@ -214,7 +150,7 @@ This will create two files:
 
 ### Quickstart with Docker Compose
 
-Bring up Postgres, apply migrations, and start the API in one command:
+Bring up MongoDB (as a single-node replica set, required for the transactional outbox) and start the API in one command:
 
 ```bash
 make docker-up        # docker compose up --build
@@ -271,37 +207,22 @@ The full API is described in the [OpenAPI spec](api/openapi.yaml).
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/sklinkert/go-ddd.git
-cd go-ddd
+git clone https://github.com/dev-colab-hub/backend.git
+cd backend
 go mod download
 ```
 
-2. Install sqlc (for development):
+2. Start a local MongoDB replica set (or use `make docker-up`, which starts the whole stack including the app):
 ```bash
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0
+docker exec mongo mongosh --quiet --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]})"
 ```
 
-3. Generate database code (if you modify SQL queries):
+3. Run the application:
 ```bash
-sqlc generate
-```
-
-4. Set up your PostgreSQL database and run migrations:
-```bash
-# Set your database connection URL
-export DATABASE_URL="postgres://user:password@localhost/dbname?sslmode=disable"
-
-# Run migrations using the built-in utility
-go run migrate.go -command up
-
-# Or use the CLI tool directly
-migrate -path migrations -database $DATABASE_URL up
-```
-
-5. Run the application:
-```bash
-make run            # or: go run ./cmd/marketplace
-# Override the database via the DATABASE_URL env var (libpq DSN or postgres:// URL).
+export MONGO_URI="mongodb://localhost:27017/?replicaSet=rs0"
+make run            # or: go run ./cmd/api
+# Indexes are created automatically on startup (see EnsureIndexes).
 ```
 
 ### Common Make targets
@@ -312,20 +233,7 @@ make test         # run all tests with the race detector (needs Docker)
 make test-unit    # run only tests that don't require Docker
 make lint         # run golangci-lint
 make fmt          # format the code (gofmt + goimports)
-make migrate-up   # apply migrations against $DATABASE_URL
-make sqlc         # regenerate sqlc code
 ```
-
-### Contributions
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
-
-### Use This Template
-
-Click **"Use this template"** on GitHub to bootstrap your own service from this structure, or fork it and replace the marketplace domain with your own. The [DDD & CQRS guide](DDD_CQRS_PRINCIPLES.md) walks you through adapting the patterns to any business domain.
-
-If this template helps you, **give it a ⭐** — it helps others find it.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=sklinkert/go-ddd&type=Date)](https://star-history.com/#sklinkert/go-ddd&Date)
 
 ### License
 Distributed under the MIT License. See LICENSE for more information.

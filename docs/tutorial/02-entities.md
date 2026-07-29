@@ -1,5 +1,7 @@
 # 2. Entities that guard themselves
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 An **entity** is a domain object with identity and a life cycle. Two products with identical names and prices are still two different products; what makes each one *itself* is its Id, not its attributes. Entities get created, change over time, and eventually get deleted — and at every step, certain things must hold true. Those are its **invariants**.
 
 The anemic version — the one most codebases ship — looks like this:

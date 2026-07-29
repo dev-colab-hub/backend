@@ -1,5 +1,7 @@
 # 3. Value objects, starting with Money
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase, but the DDD/CQRS concepts still apply.
+
 Entities have identity; **value objects** have only value. Two `Money` values of 19.99 EUR are not "two moneys that happen to be equal" — they are the same value, the way two 7s are the same number. That definition sounds philosophical until you see what it buys you in code: value objects are immutable, validated at construction, compared by value, and safe to copy and pass anywhere.
 
 Money is the canonical value object because getting it wrong is expensive in the most literal sense. It's also the bug I've seen most often in the wild: a `Price float64` field, and a team that swears the numbers "look fine".

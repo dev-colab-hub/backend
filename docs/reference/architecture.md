@@ -1,5 +1,7 @@
 # Architecture reference
 
+> **Note:** Written for the original `go-ddd` template's Postgres/pgx/sqlc stack. dev-colab-hub's backend now runs on MongoDB (see `internal/infrastructure/db/mongodb/`) — code snippets, file paths, and permalinks below no longer match the current codebase; the architectural rules still apply.
+
 The one-page version of the rules the tutorial builds up. If you're evaluating the template or enforcing conventions in review, this is the page to keep open.
 
 ## The onion
@@ -23,7 +25,7 @@ internal/
 | `infrastructure` | domain, application | interface |
 | `interface` | application, domain (types only) | infrastructure |
 
-The wiring point where everything meets is [`cmd/marketplace/main.go`](https://github.com/sklinkert/go-ddd/blob/main/cmd/marketplace/main.go): it constructs concrete repositories, injects them into services, and hands services to controllers. No other file knows all the layers.
+The wiring point where everything meets is [`cmd/api/main.go`](https://github.com/dev-colab-hub/backend/blob/main/cmd/api/main.go): it constructs concrete repositories, injects them into services, and hands services to controllers. No other file knows all the layers.
 
 ## Layer responsibilities
 
